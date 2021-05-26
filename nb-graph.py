@@ -1,14 +1,28 @@
 import frontmatter
 import json
+import os
 from glob import glob
 
-nodes = []
 path = '/home/pietro/.nb/politica/*.md'
 output = 'out.html'
 
+nodes = []
+indexes = {}
+
 for filename in glob(path):
     with open(filename, 'r') as file:
+        directory = os.path.dirname(filename)
+        filename = os.path.basename(filename)
+
+        # Parse the file and it's metadata
         metadata, content = frontmatter.parse(file.read())
+
+        # Read the index file to determine this file's id
+        if directory not in indexes:
+            with open(os.path.join(directory, '.index'), 'r') as index:
+                indexes[directory] = index.read()
+        # Now find the line where this file belongs
+        file_id = indexes[directory].splitlines().index(filename) + 1
 
         # Find a line with only hashtags
         tags = []
@@ -25,6 +39,8 @@ for filename in glob(path):
                 break
 
         nodes.append({
+            'index': file_id,
+            'filename': filename,
             'metadata': metadata,
             'content': content,
             'tags': tags,

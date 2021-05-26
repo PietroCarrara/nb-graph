@@ -22,20 +22,55 @@
                 yield i;
             }
         }
+
+        function color2rgb(color) {
+            return [
+                parseInt(color.substr(1,2),16),
+                parseInt(color.substr(3,2),16),
+                parseInt(color.substr(5,2),16)
+            ];
+        }
+
+        function averageRGB(colors) {
+            if (colors.length <= 0) {
+                return [0, 0, 0];
+            }
+
+            var avgR = 0;
+            var avgG = 0;
+            var avgB = 0;
+            for (var color of colors) {
+                avgR += color[0];
+                avgG += color[1];
+                avgB += color[2];
+            }
+
+            return [
+                Math.round(avgR / colors.length),
+                Math.round(avgG / colors.length),
+                Math.round(avgB / colors.length),
+            ];
+        }
+
+        function rgb2color(rgb) {
+            return `#${rgb[0].toString(16)}${rgb[1].toString(16)}${rgb[2].toString(16)}`
+        }
     </script>
     <script>
         /* __DATA_DECLARATION__ */
 
-        const width = 600;
-        const height = 600;
+        const width = 400;
+        const height = 400
+        const radius = 5;
 
-        // Generate a unique id for each node
+        // Generate a sequential id for each node
         for (var i in data) {
             data[i].id = Number(i);
         }
 
         // Adjacency matrix based on the tags
         // links[i][j] stores how many tags do nodes i and j share
+        // j < i must be true when accessing this matrix
         var links = Array(data.length);
         for (var i of range(0, data.length)) {
             links[i] = Array(i).fill(0);
@@ -50,10 +85,10 @@
             }
         }
 
-        // tagColor['#example'] = some color
-        const tagColor = d3.scaleOrdinal(d3.schemeCategory10);
+        // tagColor('#example') = some unique color
+        const tagColor = d3.scaleOrdinal(d3.schemePaired);
 
-
+        // Transform the matrix to a object that d3 understands
         var d3links = [];
         for (var i in links) {
             for (var j of range(0, i)) {
@@ -67,8 +102,6 @@
             }
         }
         const d3nodes = data.map(d => Object.create(d));
-
-        const radius = 5;
 
         const simulation = d3
             .forceSimulation(d3nodes)
@@ -87,7 +120,7 @@
             .selectAll('line')
             .data(d3links)
             .join('line')
-            .attr('stroke-width', 1);
+            .attr('stroke-width', l => Math.sqrt(l.strength));
 
         const circles = svg
             .append('g')
@@ -95,7 +128,7 @@
             .data(d3nodes)
             .join('circle')
             .attr('r', radius)
-            .attr('fill', d => d.tags.length > 0 ? tagColor(d.tags[0]) : 'red')
+            .attr('fill', d => rgb2color(averageRGB(d.tags.map(tagColor).map(color2rgb))))
             .attr('stroke', 'black')
             .on('click', function(d) {
                 console.log(d3.select(this).data());
