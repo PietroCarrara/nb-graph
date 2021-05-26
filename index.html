@@ -10,6 +10,8 @@
     <style>
         body {
             margin: 0;
+            background-color: #1a1a1a;
+            color: #e6e6e6;
             overflow-y: hidden;
         }
 
@@ -102,7 +104,7 @@
 
         function averageRGB(colors) {
             if (colors.length <= 0) {
-                return [0, 0, 0];
+                return [255, 255, 255];
             }
 
             var avgR = 0;
@@ -204,7 +206,7 @@
 
         const lines = svg
             .append('g')
-            .attr('stroke', '#444')
+            .attr('stroke', '#a6a6a6')
             .selectAll('line')
             .data(d3links)
             .join('line')
