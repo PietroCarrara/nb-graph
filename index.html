@@ -56,6 +56,39 @@
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script>
         // Set-up
+        window.addEventListener('hashchange', function () {
+            const match = /#select-nb-(\d+)/.exec(window.location.hash)
+
+            if (match) {
+                const id = Number(match[1]);
+                for (var node of data) {
+                    if (node.nbIndex == id) {
+                        activateNode(node);
+                    }
+                }
+            }
+
+            window.location.hash = '';
+        });
+
+        const tokenizer = {
+            link(src) {
+                const match = src.match(/\[\[(\d+)\]\]/);
+
+                if (match && match.index == 0) {
+                    return {
+                        type: 'link',
+                        raw: match[0],
+                        href: '#select-nb-' + match[1],
+                        text: match[1],
+                        title: null,
+                    };
+                }
+
+                return false;
+            }
+        };
+
         const renderer = {
             image(href, title, text) {
                 return `<img src="${href}" alt="${title}" class="img-fluid">`;
@@ -83,9 +116,9 @@
                     + level
                     + '>\n';
             }
-        }
+        };
 
-        marked.use({ renderer })
+        marked.use({ renderer, tokenizer })
     </script>
     <script>
         function* range(start, end) {
@@ -132,6 +165,10 @@
             d3.select('.nb-id').text(nodeData.nbIndex);
             d3.selectAll('.nb-content').html(marked(nodeData.content));
 
+            // Highlight the node
+            circles.attr('stroke', d => d.id == nodeData.id ? '#6edff6' : 'black');
+
+            // Show tag connections
             tagLines
                 .attr('visibility', d => d.source.id == nodeData.id || d.target.id == nodeData.id ? 'visible' : 'hidden')
         }
@@ -180,7 +217,7 @@
                         target: Number(match[1]),
                     }));
                 }
-            } while(match);
+            } while (match);
         }
 
         // Transform the matrix to a object that d3 understands
@@ -234,6 +271,7 @@
             .join('circle')
             .attr('r', radius)
             .attr('fill', d => rgb2color(averageRGB(d.tags.map(tagColor).map(color2rgb))))
+            .attr('stroke-width', 1.5)
             .attr('stroke', 'black')
             .on('click', function (d) {
                 activateNode(d3.select(this).data()[0]);
