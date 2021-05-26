@@ -38,8 +38,21 @@ for filename in glob(path):
                 tags = segments
                 break
 
+        # Find a title
+        title = filename
+        if 'title' in metadata:
+            title = metadata['title']
+            del metadata['title']
+        else:
+            # Try to search markdown a title line (# Example)
+            for line in content.splitlines():
+                if line.startswith('# '):
+                    title = line[2:]
+                    break
+
         nodes.append({
-            'index': file_id,
+            'title': title,
+            'nbIndex': file_id,
             'filename': filename,
             'metadata': metadata,
             'content': content,
