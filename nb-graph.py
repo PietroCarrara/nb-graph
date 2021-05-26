@@ -27,7 +27,7 @@ for filename in glob(path):
         nodes.append({
             'metadata': metadata,
             'content': content,
-            'tags:': tags,
+            'tags': tags,
         })
 
 with open('index.html', 'r') as html:

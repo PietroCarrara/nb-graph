@@ -1,4 +1,5 @@
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -11,25 +12,82 @@
         }
     </style>
 </head>
+
 <body>
 
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+        function* range(start, end) {
+            for (let i = start; i < end; i++) {
+                yield i;
+            }
+        }
+    </script>
     <script>
         /* __DATA_DECLARATION__ */
 
         const width = 600;
         const height = 600;
 
+        // Generate a unique id for each node
+        for (var i in data) {
+            data[i].id = Number(i);
+        }
+
+        // Adjacency matrix based on the tags
+        // links[i][j] stores how many tags do nodes i and j share
+        var links = Array(data.length);
+        for (var i of range(0, data.length)) {
+            links[i] = Array(i).fill(0);
+        }
+        for (var i in data) {
+            for (var j of range(0, i)) {
+                for (var tag of data[i].tags) {
+                    if (data[j].tags.includes(tag)) {
+                        links[i][j]++;
+                    }
+                }
+            }
+        }
+
+        // tagColor['#example'] = some color
+        const tagColor = d3.scaleOrdinal(d3.schemeCategory10);
+
+
+        var d3links = [];
+        for (var i in links) {
+            for (var j of range(0, i)) {
+                if (links[i][j] > 0) {
+                    d3links.push(Object.create({
+                        'source': Number(i),
+                        'target': Number(j),
+                        'strength': links[i][j],
+                    }));
+                }
+            }
+        }
         const d3nodes = data.map(d => Object.create(d));
+
         const radius = 5;
 
         const simulation = d3
             .forceSimulation(d3nodes)
-            .force('center', d3.forceCenter(width / 2, height / 2));
+            .force('links', d3.forceLink(d3links).id(d => d.id))
+            .force('charge', d3.forceManyBody())
+            .force("x", d3.forceX())
+            .force("y", d3.forceY());
 
         const svg = d3
             .create('svg')
-            .attr('viewBox', [0, 0, width, height]);
+            .attr('viewBox', [-width/2, -height/2, width, height]);
+
+        const lines = svg
+            .append('g')
+            .attr('stroke', '#444')
+            .selectAll('line')
+            .data(d3links)
+            .join('line')
+            .attr('stroke-width', 1);
 
         const circles = svg
             .append('g')
@@ -37,12 +95,19 @@
             .data(d3nodes)
             .join('circle')
             .attr('r', radius)
-            .attr('cx', d => d.x)
-            .attr('cy', d => d.y)
-            .attr('fill', 'red')
-            .attr('stroke', 'black');
+            .attr('fill', d => d.tags.length > 0 ? tagColor(d.tags[0]) : 'red')
+            .attr('stroke', 'black')
+            .on('click', function(d) {
+                console.log(d3.select(this).data());
+            });
 
         simulation.on('tick', () => {
+            lines
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y)
+
             circles
                 .attr('cx', d => d.x)
                 .attr('cy', d => d.y)
@@ -52,4 +117,5 @@
             .append(() => svg.node());
     </script>
 </body>
+
 </html>
