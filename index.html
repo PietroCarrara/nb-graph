@@ -132,17 +132,8 @@
             d3.select('.nb-id').text(nodeData.nbIndex);
             d3.selectAll('.nb-content').html(marked(nodeData.content));
 
-            // Show tag links
-            for (var link in d3links) {
-                if (d3links[link].source.id == nodeData.id || d3links[link].target.id == nodeData.id) {
-                    d3links[link].visible = true;
-                } else {
-                    d3links[link].visible = false;
-                }
-            }
-
-            // 'redraw' the links
-            lines.attr('visibility', d => d.visible ? 'visible' : 'hidden');
+            tagLines
+                .attr('visibility', d => d.source.id == nodeData.id || d.target.id == nodeData.id ? 'visible' : 'hidden')
         }
     </script>
     <script>
@@ -160,15 +151,15 @@
         // Adjacency matrix based on the tags
         // links[i][j] stores how many tags do nodes i and j share
         // j < i must be true when accessing this matrix
-        var links = Array(data.length);
+        var tagLinks = Array(data.length);
         for (var i of range(0, data.length)) {
-            links[i] = Array(i).fill(0);
+            tagLinks[i] = Array(i).fill(0);
         }
         for (var i in data) {
             for (var j of range(0, i)) {
                 for (var tag of data[i].tags) {
                     if (data[j].tags.includes(tag)) {
-                        links[i][j]++;
+                        tagLinks[i][j]++;
                     }
                 }
             }
@@ -177,16 +168,30 @@
         // tagColor('#example') = some unique color
         const tagColor = d3.scaleOrdinal(d3.schemePaired);
 
+        // Links from one node to other are writen as [[39]], [[124]]...
+        var d3Links = [];
+        var linkRegex = /\[\[(\d+)\]\]/g;
+        for (var node of data) {
+            do {
+                var match = linkRegex.exec(node.content);
+                if (match) {
+                    d3Links.push(Object.create({
+                        source: node.nbIndex,
+                        target: Number(match[1]),
+                    }));
+                }
+            } while(match);
+        }
+
         // Transform the matrix to a object that d3 understands
-        var d3links = [];
-        for (var i in links) {
+        var d3TagLinks = [];
+        for (var i in tagLinks) {
             for (var j of range(0, i)) {
-                if (links[i][j] > 0) {
-                    d3links.push(Object.create({
+                if (tagLinks[i][j] > 0) {
+                    d3TagLinks.push(Object.create({
                         source: Number(i),
                         target: Number(j),
-                        strength: links[i][j],
-                        visible: false, // Every connections starts invisible
+                        strength: tagLinks[i][j],
                     }));
                 }
             }
@@ -195,7 +200,8 @@
 
         const simulation = d3
             .forceSimulation(d3nodes)
-            .force('links', d3.forceLink(d3links).id(d => d.id))
+            .force('tagLinks', d3.forceLink(d3TagLinks).id(d => d.id))
+            .force('links', d3.forceLink(d3Links).id(d => d.nbIndex))
             .force('charge', d3.forceManyBody())
             .force("x", d3.forceX())
             .force("y", d3.forceY());
@@ -204,13 +210,22 @@
             .create('svg')
             .attr('viewBox', [-width / 2, -height / 2, width, height]);
 
-        const lines = svg
+        const tagLines = svg
             .append('g')
             .attr('stroke', '#a6a6a6')
             .selectAll('line')
-            .data(d3links)
+            .data(d3TagLinks)
             .join('line')
-            .attr('stroke-width', l => Math.sqrt(l.strength));
+            .attr('stroke-width', l => Math.sqrt(l.strength))
+            .attr('visibility', 'hidden'); // All tag connections start hidden
+
+        const lines = svg
+            .append('g')
+            .attr('stroke', 'cornflowerblue')
+            .selectAll('line')
+            .data(d3Links)
+            .join('line')
+            .attr('stroke-width', 2);
 
         const circles = svg
             .append('g')
@@ -225,16 +240,21 @@
             });
 
         simulation.on('tick', () => {
+            tagLines
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+
             lines
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y)
-                .attr('visibility', d => d.visible ? 'visible' : 'hidden');
+                .attr('y2', d => d.target.y);
 
             circles
                 .attr('cx', d => d.x)
-                .attr('cy', d => d.y)
+                .attr('cy', d => d.y);
         })
 
         d3.select('#graph')
