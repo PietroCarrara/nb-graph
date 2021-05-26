@@ -43,12 +43,6 @@ for filename in glob(path):
         if 'title' in metadata:
             title = metadata['title']
             del metadata['title']
-        else:
-            # Try to search markdown a title line (# Example)
-            for line in content.splitlines():
-                if line.startswith('# '):
-                    title = line[2:]
-                    break
 
         nodes.append({
             'title': title,

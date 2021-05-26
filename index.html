@@ -10,6 +10,15 @@
     <style>
         body {
             margin: 0;
+            overflow-y: hidden;
+        }
+
+        .text-justify {
+            text-align: justify;
+        }
+
+        #content {
+            overflow-y: auto;
         }
 
         svg {
@@ -25,7 +34,7 @@
         <div class="row m-0 p-0 h-100">
             <div class="col-8 h-100" id="graph"></div>
             <div class="col-4 h-100" id="content">
-                <h1 class="nb-title">
+                <h1 class="nb-title text-break">
                     nb-title
                 </h1>
                 <div class="w-100 text-end">
@@ -34,16 +43,48 @@
                     </small>
                 </div>
                 <hr>
-                <div class="container">
-                    <span class="nb-content">
-                        nb-content
-                    </span>
+                <div class="container text-justify nb-content text-break">
+                    nb-content
                 </div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+        // Set-up
+        const renderer = {
+            image(href, title, text) {
+                return `<img src="${href}" alt="${title}" class="img-fluid">`;
+            },
+            heading(text, level, raw, slugger) {
+                // Check for a heading id definition
+                const idCap = /(?:[^\\])\{(.*[^\\])\}$/.exec(text);
+                var id = slugger.slug(text);
+                if (idCap) {
+                    const components = idCap[1].trim().split(' ');
+                    if (components[0].startsWith('#')) {
+                        id = components[0].substr(1);
+                        // Remove the '{...}' from the heading
+                        text = text.replace(idCap[0], '').trim();
+                    }
+                }
+
+                return '<h'
+                    + level
+                    + ' id="'
+                    + id
+                    + '">'
+                    + text
+                    + '</h'
+                    + level
+                    + '>\n';
+            }
+        }
+
+        marked.use({ renderer })
+    </script>
     <script>
         function* range(start, end) {
             for (let i = start; i < end; i++) {
@@ -87,7 +128,19 @@
         function activateNode(nodeData) {
             d3.select('.nb-title').text(nodeData.title);
             d3.select('.nb-id').text(nodeData.nbIndex);
-            d3.selectAll('.nb-content').text(nodeData.content);
+            d3.selectAll('.nb-content').html(marked(nodeData.content));
+
+            // Show tag links
+            for (var link in d3links) {
+                if (d3links[link].source.id == nodeData.id || d3links[link].target.id == nodeData.id) {
+                    d3links[link].visible = true;
+                } else {
+                    d3links[link].visible = false;
+                }
+            }
+
+            // 'redraw' the links
+            lines.attr('visibility', d => d.visible ? 'visible' : 'hidden');
         }
     </script>
     <script>
@@ -128,9 +181,10 @@
             for (var j of range(0, i)) {
                 if (links[i][j] > 0) {
                     d3links.push(Object.create({
-                        'source': Number(i),
-                        'target': Number(j),
-                        'strength': links[i][j],
+                        source: Number(i),
+                        target: Number(j),
+                        strength: links[i][j],
+                        visible: false, // Every connections starts invisible
                     }));
                 }
             }
@@ -174,6 +228,7 @@
                 .attr('y1', d => d.source.y)
                 .attr('x2', d => d.target.x)
                 .attr('y2', d => d.target.y)
+                .attr('visibility', d => d.visible ? 'visible' : 'hidden');
 
             circles
                 .attr('cx', d => d.x)
