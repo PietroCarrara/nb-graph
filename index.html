@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nb Graph</title>
+    <style>
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script>
+        /* __DATA_DECLARATION__ */
+
+        const width = 600;
+        const height = 600;
+
+        const d3nodes = data.map(d => Object.create(d));
+        const radius = 5;
+
+        const simulation = d3
+            .forceSimulation(d3nodes)
+            .force('center', d3.forceCenter(width / 2, height / 2));
+
+        const svg = d3
+            .create('svg')
+            .attr('viewBox', [0, 0, width, height]);
+
+        const circles = svg
+            .append('g')
+            .selectAll('circle')
+            .data(d3nodes)
+            .join('circle')
+            .attr('r', radius)
+            .attr('cx', d => d.x)
+            .attr('cy', d => d.y)
+            .attr('fill', 'red')
+            .attr('stroke', 'black');
+
+        simulation.on('tick', () => {
+            circles
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y)
+        })
+
+        d3.select('body')
+            .append(() => svg.node());
+    </script>
+</body>
+</html>
