@@ -243,6 +243,22 @@
             .force("x", d3.forceX())
             .force("y", d3.forceY());
 
+        const drag = d3.drag()
+            .on('start', (e, d) => {
+                if (!e.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            })
+            .on('drag', (e, d) => {
+                d.fx = e.x;
+                d.fy = e.y;
+            })
+            .on('end', (e, d) => {
+                if (!e.active) simulation.alphaTarget(0);
+                d.fx = null;
+                d.fy = null;
+            });
+
         const svg = d3
             .create('svg')
             .attr('viewBox', [-width / 2, -height / 2, width, height]);
@@ -275,7 +291,8 @@
             .attr('stroke', 'black')
             .on('click', function (d) {
                 activateNode(d3.select(this).data()[0]);
-            });
+            })
+            .call(drag);
 
         simulation.on('tick', () => {
             tagLines
