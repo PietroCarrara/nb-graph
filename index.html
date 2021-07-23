@@ -163,15 +163,6 @@
 
             // Highlight the node
             circles.attr('stroke', d => d.id == nodeData.id ? '#6edff6' : 'black');
-
-            // Show tag connections
-            tagLinksLines.selectAll('line.tag-link')
-                .data(d3TagLinks.filter(d => d.source.id == nodeData.id || d.target.id == nodeData.id))
-                .join('line')
-                .attr('class', 'tag-link')
-                .attr('z-index', -1)
-                .attr('stroke', '#a6a6a6')
-                .attr('stroke-width', l => Math.sqrt(l.strength));
         }
 
         function deactivateNode() {
@@ -181,9 +172,6 @@
 
             // Stop highlighting any nodes
             circles.attr('stroke', 'black');
-
-            // Remove tag links
-            tagLinksLines.selectAll('line.tag-link').remove();
         }
     </script>
     <script>
@@ -281,8 +269,6 @@
                 }
             });
 
-        const tagLinksLines = svg.append('g');
-
         const lines = svg
             .append('g')
             .attr('stroke', 'cornflowerblue')
@@ -306,12 +292,6 @@
             .call(drag);
 
         simulation.on('tick', () => {
-            tagLinksLines.selectAll('line.tag-link')
-                .attr('x1', d => d.source.x)
-                .attr('y1', d => d.source.y)
-                .attr('x2', d => d.target.x)
-                .attr('y2', d => d.target.y);
-
             lines
                 .attr('x1', d => d.source.x)
                 .attr('y1', d => d.source.y)
