@@ -213,10 +213,15 @@
             do {
                 var match = linkRegex.exec(node.content);
                 if (match) {
-                    d3Links.push(Object.create({
-                        source: node.nbIndex,
-                        target: Number(match[1]),
-                    }));
+                    const link = Number(match[1]);
+                    if (!data.find(d => d.nbIndex === link)) {
+                        console.warn(`Note ${node.nbIndex} might have a broken link to ${link}!`);
+                    } else {
+                        d3Links.push(Object.create({
+                            source: node.nbIndex,
+                            target: link,
+                        }));
+                    }
                 }
             } while (match);
         }
